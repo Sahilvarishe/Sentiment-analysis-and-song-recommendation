@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Create your MoodMate account.">
+  <title>Create account | MoodMate</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body class="theme-dark auth-page">
+  <main class="auth-layout">
+    <section class="auth-story" aria-labelledby="registerStoryTitle">
+      <a class="auth-brand" href="login.html" aria-label="MoodMate home">
+        <span class="auth-brand-icon"><i class="fa-solid fa-brain" aria-hidden="true"></i></span>
+        <span>MoodMate</span>
+      </a>
+      <div class="story-copy">
+        <p class="story-eyebrow">Your space to reset</p>
+        <h1 id="registerStoryTitle">A kinder check-in starts here.</h1>
+        <p>Create a space for thoughtful pauses, emotional awareness, and music that feels right for the moment.</p>
+      </div>
+      <div class="story-note"><i class="fa-solid fa-leaf" aria-hidden="true"></i><span>Small moments can make room for balance.</span></div>
+    </section>
+
+    <section class="auth-card register-card" aria-labelledby="registerTitle">
+      <div class="auth-card-heading">
+        <p class="auth-kicker">Start fresh</p>
+        <h2 id="registerTitle">Create your account</h2>
+        <p>A few details, then you're on your way.</p>
+      </div>
+
+      <div class="auth-message" id="authMessage" role="status" aria-live="polite" hidden></div>
+
+      <form id="registerForm" novalidate>
+        <div class="form-field">
+          <label for="registerName">Full name</label>
+          <input id="registerName" name="name" type="text" autocomplete="name" maxlength="80" placeholder="Your name" required>
+          <span class="field-error" data-error-for="registerName"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="registerEmail">Email address</label>
+          <input id="registerEmail" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+          <span class="field-error" data-error-for="registerEmail"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="registerPassword">Password</label>
+          <div class="password-field">
+            <input id="registerPassword" name="password" type="password" autocomplete="new-password" placeholder="Create a password" required>
+            <button class="password-toggle" type="button" data-toggle-password="registerPassword" aria-label="Show password" aria-pressed="false">
+              <i class="fa-regular fa-eye" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="strength-track" aria-hidden="true"><span id="strengthBar"></span></div>
+          <p class="strength-label" id="strengthLabel" aria-live="polite">Use 8+ characters, including uppercase, lowercase, and a number.</p>
+          <span class="field-error" data-error-for="registerPassword"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="confirmPassword">Confirm password</label>
+          <div class="password-field">
+            <input id="confirmPassword" name="confirm_password" type="password" autocomplete="new-password" placeholder="Enter your password again" required>
+            <button class="password-toggle" type="button" data-toggle-password="confirmPassword" aria-label="Show password" aria-pressed="false">
+              <i class="fa-regular fa-eye" aria-hidden="true"></i>
+            </button>
+          </div>
+          <span class="field-error" data-error-for="confirmPassword"></span>
+        </div>
+
+        <label class="check-label terms-check">
+          <input type="checkbox" id="termsAccepted" name="terms_accepted" required>
+          <span>I agree to the Terms &amp; Conditions.</span>
+        </label>
+
+        <button class="auth-submit" id="registerSubmit" type="submit">
+          <span class="button-label">Create account</span>
+          <span class="button-spinner" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <p class="auth-switch">Already have an account? <a href="login.html">Log in</a></p>
+      <p class="auth-disclaimer">Your password is securely hashed before it is stored.</p>
+    </section>
+  </main>
+  <script src="js/auth-page.js"></script>
+</body>
+</html>

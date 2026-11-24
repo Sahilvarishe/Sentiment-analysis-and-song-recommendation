@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindPulse AI | Facial Emotion Detection & Music Therapy</title>
+  <meta name="description" content="AI-powered mental wellness platform using real-time facial emotion recognition and personalized music therapy to soothe stress, uplift mood, and enhance emotional well-being.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+  <script>
+    // Clean WebGPU adapter options & silence known Chromium Windows notice
+    if (navigator.gpu && navigator.gpu.requestAdapter) {
+      const _origReq = navigator.gpu.requestAdapter.bind(navigator.gpu);
+      navigator.gpu.requestAdapter = function(opts) {
+        if (opts && opts.powerPreference) {
+          const clean = Object.assign({}, opts);
+          delete clean.powerPreference;
+          return _origReq(clean);
+        }
+        return _origReq(opts);
+      };
+    }
+    const _origWarn = console.warn.bind(console);
+    console.warn = function(...args) {
+      if (typeof args[0] === 'string' && (args[0].includes('requestAdapter') || args[0].includes('powerPreference'))) return;
+      _origWarn(...args);
+    };
+  </script>
+  
+  <!-- Google Fonts: Outfit & Inter for ultra-modern luxury typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons for clean UI symbols -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/components.css?v=3">
+  <link rel="stylesheet" href="css/auth.css?v=3">
+</head>
+<body class="theme-dark auth-pending">
+  <script src="js/auth-guard.js"></script>
+  <!-- Glowing Background Ambient Spheres -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="brand-icon">
+        <i class="fa-solid fa-brain-circuit"></i>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">MindPulse<span class="gradient-text">.AI</span></span>
+        <span class="brand-subtitle">Emotion AI & Music Therapy</span>
+      </div>
+    </div>
+
+    <nav class="nav-menu">
+      <button class="nav-tab active" data-tab="scanner-section" id="nav-scanner-btn">
+        <i class="fa-solid fa-camera-web"></i>
+        <span>Live Emotion Scanner</span>
+      </button>
+      <button class="nav-tab" data-tab="music-section" id="nav-music-btn">
+        <i class="fa-solid fa-music"></i>
+        <span>Therapy Player</span>
+      </button>
+      <button class="nav-tab" data-tab="analytics-section" id="nav-analytics-btn">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Mood Analytics</span>
+      </button>
+      <button class="nav-tab" data-tab="zen-section" id="nav-zen-btn">
+        <i class="fa-solid fa-wind"></i>
+        <span>Calm Sanctuary</span>
+      </button>
+    </nav>
+
+    <div class="nav-actions">
+      <!-- Backend Status Indicator -->
+      <div class="backend-status-pill" id="backendStatusPill" title="Click to configure Flask API">
+        <span class="status-dot"></span>
+        <span class="status-label" id="backendStatusText">Checking Server...</span>
+      </div>
+      <div class="account-control">
+        <span class="account-name" id="authenticatedUserName"></span>
+        <button class="btn-icon logout-button" id="logoutBtn" type="button" title="Log out" aria-label="Log out">
+          <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+        </button>
+      </div>
+      <button class="btn-icon" id="settingsBtn" title="Backend & Camera Settings">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Application Container -->
+  <main class="main-container">
+    
+    <!-- ============================================== -->
+    <!-- TAB 1: SCANNER & EMOTION DETECTION             -->
+    <!-- ============================================== -->
+    <section class="tab-content active" id="scanner-section">
+      <!-- Hero Intro Banner -->
+      <div class="hero-header">
+        <div class="badge-pill">
+          <i class="fa-solid fa-sparkles"></i> Real-time Computer Vision & Neural Mood Healing
+        </div>
+        <h1 class="hero-title">Scan Your Emotion, <span class="gradient-text">Heal With Sound</span></h1>
+        <p class="hero-description">
+          Our Deep Learning CNN analyzes micro-facial expressions to identify your emotional state, 
+          recommending psychoacoustically curated tracks to harmonize stress, elevate joy, and restore inner peace.
+        </p>
+      </div>
+
+      <div class="scanner-grid">
+        <!-- Left: Webcam & Live Detection HUD -->
+        <div class="scanner-card glass-panel">
+          <div class="card-header">
+            <div class="header-title-group">
+              <span class="hud-live-tag">
+                <span class="pulse-indicator"></span> LIVE FEED
+              </span>
+              <h3>Facial Expression Recognition</h3>
+            </div>
+            <div class="camera-controls-mini">
+              <button class="btn-pill-small" id="toggleCameraBtn">
+                <i class="fa-solid fa-video"></i> <span>Stop Cam</span>
+              </button>
+              <button class="btn-pill-small secondary" id="switchCameraBtn" title="Switch Video Device">
+                <i class="fa-solid fa-camera-rotate"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Video Viewport with HUD Overlay -->
+          <div class="viewport-wrapper" id="viewportWrapper">
+            <video id="webcamVideo" autoplay playsinline muted></video>
+            <canvas id="detectionOverlayCanvas"></canvas>
+
+            <!-- Scanning Reticle & Corner Brackets -->
+            <div class="hud-scanner-overlay" id="hudScannerOverlay">
+              <div class="corner-bracket top-left"></div>
+              <div class="corner-bracket top-right"></div>
+              <div class="corner-bracket bottom-left"></div>
+              <div class="corner-bracket bottom-right"></div>
+              <div class="hud-scan-beam" id="scanBeam"></div>
+              
+              <!-- Face Target Guide (Clean oval guide without text) -->
+              <div class="face-target-guide" id="faceTargetGuide">
+                <div class="target-circle"></div>
+              </div>
+            </div>
+
+            <!-- No Camera Placeholder Overlay -->
+            <div class="camera-off-overlay" id="cameraOffOverlay">
+              <div class="off-icon"><i class="fa-solid fa-video-slash"></i></div>
+              <h4>Camera Feed is Inactive</h4>
+              <p>Enable your webcam to start real-time facial emotion recognition</p>
+              <button class="btn-primary" id="startCamPromptBtn">
+                <i class="fa-solid fa-power-off"></i> Start Webcam
+              </button>
+            </div>
+          </div>
+
+          <!-- Action Buttons Bar -->
+          <div class="scanner-actions-bar">
+            <button class="btn-action primary" id="captureAndDetectBtn">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Analyze Current Expression</span>
+            </button>
+            
+            <button class="btn-action secondary" id="autoScanToggleBtn">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span id="autoScanText">Enable Continuous Scan</span>
+            </button>
+          </div>
+
+          <!-- Manual / Demo Quick Emotion Pickers (Great for testing without camera) -->
+          <div class="manual-emotion-selector">
+            <span class="selector-label"><i class="fa-solid fa-sliders"></i> Test Specific Emotion Mode:</span>
+            <div class="emotion-chips-group">
+              <button class="emotion-pill" data-emotion="happy"><span class="emoji">😊</span> Happy</button>
+              <button class="emotion-pill" data-emotion="sad"><span class="emoji">😔</span> Sad</button>
+              <button class="emotion-pill" data-emotion="angry"><span class="emoji">😡</span> Angry</button>
+              <button class="emotion-pill" data-emotion="fear"><span class="emoji">😨</span> Fear</button>
+              <button class="emotion-pill" data-emotion="surprise"><span class="emoji">😲</span> Surprise</button>
+              <button class="emotion-pill" data-emotion="neutral"><span class="emoji">😐</span> Neutral</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Real-time Emotion Probabilities & Wellness Insights -->
+        <div class="analysis-card glass-panel">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-chart-simple gradient-icon"></i> Neural Emotion Probabilities</h3>
+            <span class="model-badge">CNN / Keras v2.1</span>
+          </div>
+
+          <!-- Emotion Probability Meters (6 Core Emotions) -->
+          <div class="emotion-meters-container" id="emotionMetersList">
+            <!-- Happiness Meter -->
+            <div class="meter-row" data-emotion-key="happy">
+              <div class="meter-info">
+                <span class="meter-emoji">😊</span>
+                <span class="meter-name">Happiness</span>
+                <span class="meter-percent" id="pct-happy">0%</span>
+              </div>
+              <div class="meter-bar-track">
+                <div class="meter-bar-fill happy" id="bar-happy" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Sadness Meter -->
+            <div class="meter-row" data-emotion-key="sad">
+              <div class="meter-info">
+                <span class="meter-emoji">😔</span>
+                <span class="meter-name">Sadness / Stress</span>
+                <span class="meter-percent" id="pct-sad">0%</span>
+              </div>
+              <div class="meter-bar-track">
+                <div class="meter-bar-fill sad" id="bar-sad" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Anger Meter -->
+            <div class="meter-row" data-emotion-key="angry">
+              <div class="meter-info">
+                <span class="meter-emoji">😡</span>
+                <span class="meter-name">Anger / Frustration</span>
+                <span class="meter-percent" id="pct-angry">0%</span>
+              </div>
+              <div class="meter-bar-track">
+                <div class="meter-bar-fill angry" id="bar-angry" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Fear Meter -->
+            <div class="meter-row" data-emotion-key="fear">
+              <div class="meter-info">
+                <span class="meter-emoji">😨</span>
+                <span class="meter-name">Fear / Anxiety</span>
+                <span class="meter-percent" id="pct-fear">0%</span>
+              </div>
+              <div class="meter-bar-track">
+                <div class="meter-bar-fill fear" id="bar-fear" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Surprise Meter -->
+            <div class="meter-row" data-emotion-key="surprise">
+              <div class="meter-info">
+                <span class="meter-emoji">😲</span>
+                <span class="meter-name">Surprise</span>
+                <span class="meter-percent" id="pct-surprise">0%</span>
+              </div>
+              <div class="meter-bar-track">
+                <div class="meter-bar-fill surprise" id="bar-surprise" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Neutral Meter -->
+            <div class="meter-row" data-emotion-key="neutral">
+              <div class="meter-info">
+                <span class="meter-emoji">😐</span>
+                <span class="meter-name">Neutral / Calm</span>
+                <span class="meter-percent" id="pct-neutral">0%</span>
+              </div>
+              <div class="meter-bar-track">
+                <div class="meter-bar-fill neutral" id="bar-neutral" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Emotional Wellness Prescription Box -->
+          <div class="prescription-box" id="prescriptionBox">
+            <div class="rx-header">
+              <div class="rx-tag"><i class="fa-solid fa-heart-pulse"></i> Emotion Diagnosis & Sound Therapy</div>
+              <span class="rx-status-tag" id="rxStatusTag">Awaiting Scan</span>
+            </div>
+            <h4 class="rx-headline" id="rxHeadline">No expression captured yet</h4>
+            <p class="rx-explanation" id="rxExplanation">
+              Position your face towards the webcam and press "Analyze Current Expression" or test any emotion button above.
+            </p>
+            <div class="rx-recommendation-cta" id="rxCtaRow" style="display: none;">
+              <button class="btn-primary" id="playPrescribedTrackBtn">
+                <i class="fa-solid fa-play"></i>
+                <span id="rxBtnText">Play Recommended Track</span>
+              </button>
+              <button class="btn-secondary" id="viewFullPlaylistBtn">
+                <i class="fa-solid fa-list-music"></i> Browse Curated Playlist
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Recommended Songs Preview for current emotion -->
+      <div class="recommended-tracks-section">
+        <div class="section-title-row">
+          <div>
+            <h2><i class="fa-solid fa-compact-disc gradient-icon"></i> Instant Music Recommendations</h2>
+            <p class="section-subtitle" id="recommendedSubtitle">Based on your emotional state, here are handpicked therapeutic melodies.</p>
+          </div>
+          <div class="recommendation-header-actions">
+            <div class="language-selector-group">
+              <label for="songLanguageSelect" class="language-selector-label">
+                <i class="fa-solid fa-language"></i> Select Song Language
+              </label>
+              <select id="songLanguageSelect" class="song-language-dropdown" aria-label="Select Song Language">
+                <option value="Hindi" selected>Hindi</option>
+                <option value="Marathi">Marathi</option>
+                <option value="English">English</option>
+                <option value="Tamil">Tamil</option>
+                <option value="Malayalam">Malayalam</option>
+              </select>
+            </div>
+            <button class="btn-pill-small secondary" id="refreshRecommendationsBtn" title="Refresh recommendations for current emotion & language">
+              <i class="fa-solid fa-arrows-rotate"></i> <span>Refresh</span>
+            </button>
+            <button class="btn-text" id="seeAllSongsBtn">
+              View All Categories <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="tracks-grid" id="quickTracksGrid">
+          <!-- Dynamically populated via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 2: FULL MUSIC THERAPY PLAYER & LIBRARY     -->
+    <!-- ============================================== -->
+    <section class="tab-content" id="music-section">
+      <div class="hero-header">
+        <div class="badge-pill">
+          <i class="fa-solid fa-headphones"></i> Psychoacoustic Music Curation
+        </div>
+        <h1 class="hero-title">Emotion-Tuned <span class="gradient-text">Therapeutic Library</span></h1>
+        <p class="hero-description">
+          Each song is engineered or selected to stimulate neurotransmitters like dopamine and serotonin, 
+          reducing sympathetic nervous system activity and restoring equilibrium.
+        </p>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="category-filters-scroll">
+        <button class="filter-pill active" data-filter="all">All Playlists</button>
+        <button class="filter-pill" data-filter="happy">😊 Euphoric & Happy</button>
+        <button class="filter-pill" data-filter="sad">🌧️ Melancholic & Comforting</button>
+        <button class="filter-pill" data-filter="angry">🔥 Calming & Tension-Release</button>
+        <button class="filter-pill" data-filter="fear">🛡️ Anti-Anxiety & Grounding</button>
+        <button class="filter-pill" data-filter="surprise">✨ Wonder & Clarity</button>
+        <button class="filter-pill" data-filter="neutral">🌿 Zen & Focused Neutral</button>
+      </div>
+
+      <!-- Main Music Grid -->
+      <div class="music-library-layout">
+        <!-- Songs List -->
+        <div class="songs-table-card glass-panel">
+          <div class="table-search-row">
+            <div class="search-input-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="songSearchInput" placeholder="Search track name, artist, or therapeutic benefit...">
+            </div>
+            <div class="filter-counter" id="trackCounter">Showing 18 Tracks</div>
+          </div>
+
+          <div class="songs-list" id="fullSongsList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Featured Now Playing Mini-Hero Card -->
+        <div class="now-playing-panel glass-panel">
+          <div class="panel-header">
+            <h4><i class="fa-solid fa-waveform-lines"></i> Now Harmonizing</h4>
+            <span class="audio-type-badge" id="audioTypeBadge">Ambient Synthesizer</span>
+          </div>
+          
+          <div class="np-artwork-container">
+            <div class="np-art-glow" id="npArtGlow"></div>
+            <img src="" id="npCoverArt" alt="Track Cover" class="np-cover-img" style="display:none;">
+            <div class="np-fallback-art" id="npFallbackArt">
+              <i class="fa-solid fa-music"></i>
+            </div>
+            <div class="sound-wave-canvas-container">
+              <canvas id="visualizerCanvas"></canvas>
+            </div>
+          </div>
+
+          <div class="np-meta">
+            <h3 class="np-title" id="npTitle">Select a track to begin</h3>
+            <p class="np-artist" id="npArtist">MindPulse Therapeutic Audio</p>
+            <div class="np-emotion-tag" id="npEmotionTag">
+              <span class="tag-dot"></span>
+              <span id="npEmotionLabel">Emotional Equilibrium</span>
+            </div>
+          </div>
+
+          <div class="np-therapy-explanation" id="npTherapyNote">
+            Select an emotion or track to view its clinical audio frequency and mood resonance score.
+          </div>
+
+          <div class="np-actions">
+            <button class="btn-pill-small" id="npAddFavoriteBtn">
+              <i class="fa-regular fa-heart"></i> Save to Favorites
+            </button>
+            <button class="btn-pill-small secondary" id="npShareBtn">
+              <i class="fa-solid fa-share-nodes"></i> Share Track
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 3: MENTAL HEALTH ANALYTICS & LOG           -->
+    <!-- ============================================== -->
+    <section class="tab-content" id="analytics-section">
+      <div class="hero-header">
+        <div class="badge-pill">
+          <i class="fa-solid fa-chart-pie"></i> Longitudinal Wellness Tracking
+        </div>
+        <h1 class="hero-title">Emotional <span class="gradient-text">Health Insights</span></h1>
+        <p class="hero-description">
+          Monitor your mood fluctuations, identify recurrent emotional patterns, 
+          and track how therapeutic audio interventions improve your daily mental stamina.
+        </p>
+      </div>
+
+      <!-- Stats Overview Row -->
+      <div class="stats-overview-grid">
+        <div class="stat-card glass-panel">
+          <div class="stat-icon happy-tint"><i class="fa-solid fa-face-smile"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Wellness Balance Index</span>
+            <h2 class="stat-value" id="wellnessScoreVal">78<span class="stat-unit">/100</span></h2>
+            <span class="stat-subtext text-success"><i class="fa-solid fa-arrow-trend-up"></i> Positive Stability</span>
+          </div>
+        </div>
+
+        <div class="stat-card glass-panel">
+          <div class="stat-icon sad-tint"><i class="fa-solid fa-shield-heart"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Stress Attenuation</span>
+            <h2 class="stat-value" id="stressReductionVal">-34<span class="stat-unit">%</span></h2>
+            <span class="stat-subtext text-muted">Post-music calm boost</span>
+          </div>
+        </div>
+
+        <div class="stat-card glass-panel">
+          <div class="stat-icon angry-tint"><i class="fa-solid fa-clock"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Total Listening Therapy</span>
+            <h2 class="stat-value" id="totalTherapyMins">48<span class="stat-unit"> mins</span></h2>
+            <span class="stat-subtext text-muted">Across 6 emotional states</span>
+          </div>
+        </div>
+
+        <div class="stat-card glass-panel">
+          <div class="stat-icon neutral-tint"><i class="fa-solid fa-camera"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Face Emotion Scans</span>
+            <h2 class="stat-value" id="totalScansCount">0</h2>
+            <span class="stat-subtext text-muted">Logged this session</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts & Logs Grid -->
+      <div class="analytics-charts-grid">
+        <!-- Mood Distribution Wheel -->
+        <div class="chart-card glass-panel">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-chart-donut gradient-icon"></i> Emotion Distribution Spectrum</h3>
+            <span class="badge-mini">Session Data</span>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="emotionPieChart" width="300" height="260"></canvas>
+            <div class="chart-legend" id="chartLegend">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Scan History Log -->
+        <div class="history-card glass-panel">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-list-check gradient-icon"></i> Recent Expression History</h3>
+            <button class="btn-text danger" id="clearHistoryBtn">Clear Log</button>
+          </div>
+          <div class="history-table-wrapper">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Detected Mood</th>
+                  <th>Confidence</th>
+                  <th>Recommended Remedy</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <!-- Dynamically populated or empty state -->
+              </tbody>
+            </table>
+            <div class="empty-history-state" id="emptyHistoryState">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <p>No scans recorded yet. Perform a facial scan to view emotional trajectory.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clinical Wellness Coping Strategies Card Deck -->
+      <div class="coping-cards-section">
+        <h3><i class="fa-solid fa-hand-holding-heart gradient-icon"></i> Evidence-Based Coping Toolkit</h3>
+        <div class="coping-grid">
+          <div class="coping-card glass-panel">
+            <div class="coping-badge">Stress Relief</div>
+            <h4>4-7-8 Parasympathetic Reset</h4>
+            <p>Inhale quietly through nose for 4s, hold breath for 7s, exhale forcefully through mouth for 8s to quickly slow heart rate.</p>
+            <button class="btn-pill-small secondary open-zen-modal-btn">Try Guided Breathing</button>
+          </div>
+          <div class="coping-card glass-panel">
+            <div class="coping-badge">Anxiety / Overwhelm</div>
+            <h4>5-4-3-2-1 Sensory Grounding</h4>
+            <p>Notice 5 things you can see, 4 you can touch, 3 you can hear, 2 you can smell, and 1 you can taste to snap out of panic loops.</p>
+            <span class="coping-tag"><i class="fa-solid fa-check"></i> Non-Invasive</span>
+          </div>
+          <div class="coping-card glass-panel">
+            <div class="coping-badge">Anger Management</div>
+            <h4>Progressive Muscle Release</h4>
+            <p>Clench your fist or shoulders tightly for 5 seconds, then abruptly release. Feel tension leave your somatic body.</p>
+            <span class="coping-tag"><i class="fa-solid fa-music"></i> Pair with Lo-Fi Piano</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 4: CALM SANCTUARY & BREATHING SPACE        -->
+    <!-- ============================================== -->
+    <section class="tab-content" id="zen-section">
+      <div class="zen-container glass-panel">
+        <div class="zen-header">
+          <div class="badge-pill"><i class="fa-solid fa-feather-pointed"></i> Zen Sanctuary</div>
+          <h2>Box Breathing & Autonomic Regulation</h2>
+          <p>Sync your breath with the expanding rhythm below. 4 seconds inhale, 4 seconds hold, 4 seconds exhale.</p>
+        </div>
+
+        <!-- Breathing Animated Sphere -->
+        <div class="breathing-circle-container">
+          <div class="outer-glow-ring" id="zenGlowRing"></div>
+          <div class="breathing-orb" id="breathingOrb">
+            <div class="orb-inner">
+              <span class="breath-instruction" id="breathInstruction">Get Ready</span>
+              <span class="breath-countdown" id="breathCountdown">4</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zen Controls -->
+        <div class="zen-controls">
+          <button class="btn-action primary" id="zenStartBtn">
+            <i class="fa-solid fa-play"></i> Start 2-Minute Breathing
+          </button>
+          <button class="btn-action secondary" id="zenSoundBtn">
+            <i class="fa-solid fa-volume-high"></i> Rain & White Noise: On
+          </button>
+        </div>
+
+        <div class="ambient-soundscapes-row">
+          <span class="soundscape-title"><i class="fa-solid fa-sliders"></i> Background Soundscapes:</span>
+          <div class="soundscape-buttons">
+            <button class="sound-chip active" data-sound="rain"><i class="fa-solid fa-cloud-showers-heavy"></i> Soft Rain</button>
+            <button class="sound-chip" data-sound="waves"><i class="fa-solid fa-water"></i> Ocean Waves</button>
+            <button class="sound-chip" data-sound="forest"><i class="fa-solid fa-tree"></i> Deep Forest</button>
+            <button class="sound-chip" data-sound="binaural"><i class="fa-solid fa-wave-pulse"></i> 432Hz Calm</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================== -->
+  <!-- FLOATING PERSISTENT AUDIO PLAYER DOCK          -->
+  <!-- ============================================== -->
+  <footer class="player-dock glass-panel" id="playerDock">
+    <!-- Left: Track Info -->
+    <div class="dock-track-info">
+      <div class="dock-cover-thumb" id="dockCoverThumb">
+        <i class="fa-solid fa-music"></i>
+      </div>
+      <div class="dock-text">
+        <h4 class="dock-title" id="dockTitle">Weightless Melodies</h4>
+        <p class="dock-artist" id="dockArtist">MindPulse Ambient Therapy</p>
+      </div>
+      <span class="dock-mood-pill" id="dockMoodPill">Relaxation</span>
+    </div>
+
+    <!-- Center: Playback Controls & Progress Bar -->
+    <div class="dock-center-controls">
+      <div class="dock-buttons">
+        <button class="dock-btn secondary" id="dockShuffleBtn" title="Shuffle"><i class="fa-solid fa-shuffle"></i></button>
+        <button class="dock-btn secondary" id="dockPrevBtn" title="Previous"><i class="fa-solid fa-backward-step"></i></button>
+        <button class="dock-btn primary-play" id="dockPlayBtn" title="Play / Pause">
+          <i class="fa-solid fa-play" id="dockPlayIcon"></i>
+        </button>
+        <button class="dock-btn secondary" id="dockNextBtn" title="Next"><i class="fa-solid fa-forward-step"></i></button>
+        <button class="dock-btn secondary" id="dockRepeatBtn" title="Repeat"><i class="fa-solid fa-repeat"></i></button>
+      </div>
+
+      <div class="dock-progress-row">
+        <span class="time-label" id="dockCurrentTime">0:00</span>
+        <div class="dock-scrubber-track" id="dockScrubberTrack">
+          <div class="dock-scrubber-fill" id="dockScrubberFill" style="width: 0%;"></div>
+          <div class="dock-scrubber-handle" id="dockScrubberHandle"></div>
+        </div>
+        <span class="time-label" id="dockTotalTime">3:30</span>
+      </div>
+    </div>
+
+    <!-- Right: Volume & Extra Utilities -->
+    <div class="dock-right-controls">
+      <button class="dock-btn mini" id="dockMuteBtn" title="Mute/Unmute">
+        <i class="fa-solid fa-volume-high" id="dockVolumeIcon"></i>
+      </button>
+      <input type="range" class="dock-volume-slider" id="dockVolumeSlider" min="0" max="1" step="0.05" value="0.75">
+      <button class="dock-btn mini" id="dockMaximizePlayer" title="Open Full Player">
+        <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+      </button>
+    </div>
+  </footer>
+
+  <!-- ============================================== -->
+  <!-- MODAL: BACKEND API CONFIGURATION & SETTINGS    -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal-dialog glass-panel">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <i class="fa-solid fa-sliders gradient-icon"></i>
+          <h3>System Settings & Flask Backend Link</h3>
+        </div>
+        <button class="modal-close-btn" id="closeSettingsBtn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="setting-group">
+          <label for="flaskApiUrlInput">Flask API Endpoint</label>
+          <div class="input-with-button">
+            <input type="url" id="flaskApiUrlInput" value="http://127.0.0.1:5000" placeholder="http://127.0.0.1:5000">
+            <button class="btn-secondary" id="testApiConnectionBtn">Test Ping</button>
+          </div>
+          <p class="field-hint">The Flask server running your OpenCV and CNN (Keras) facial emotion classification model.</p>
+        </div>
+
+        <div class="setting-group">
+          <label>Inference Mode</label>
+          <div class="radio-cards-row">
+            <label class="radio-card active">
+              <input type="radio" name="inferenceMode" value="auto" checked>
+              <div class="card-inner">
+                <span class="radio-title"><i class="fa-solid fa-microchip"></i> Smart Hybrid</span>
+                <span class="radio-desc">Uses Flask backend when online, seamless browser AI fallback if offline</span>
+              </div>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="inferenceMode" value="flask">
+              <div class="card-inner">
+                <span class="radio-title"><i class="fa-brands fa-python"></i> Strict Flask</span>
+                <span class="radio-desc">Always routes webcam frames directly to Python backend</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label for="cameraResolutionSelect">Camera Frame Rate & Processing Quality</label>
+          <select id="cameraResolutionSelect" class="custom-select">
+            <option value="640x480" selected>Standard (640 x 480 @ 30fps) - Recommended</option>
+            <option value="1280x720">HD (1280 x 720) - Higher Precision</option>
+            <option value="320x240">Low Power (320 x 240) - Low CPU</option>
+          </select>
+        </div>
+
+        <div class="setting-group">
+          <label>Audio Engine</label>
+          <p class="field-hint">MindPulse includes both real audio preview streaming and a zero-latency Web Audio API ambient psychoacoustic synthesizer.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" id="resetDefaultsBtn">Reset Defaults</button>
+        <button class="btn-primary" id="saveSettingsBtn">Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Floating Persistent YouTube Player Widget (Active across all tabs) -->
+  <div class="floating-yt-player glass-panel" id="floatingYtPlayer">
+    <div class="floating-yt-header">
+      <div class="floating-yt-title-wrap">
+        <i class="fa-brands fa-youtube yt-icon"></i>
+        <span class="floating-yt-title" id="floatingYtTitle">YouTube Music Player</span>
+      </div>
+      <div class="floating-yt-controls">
+        <button class="floating-btn" id="floatingYtExpandBtn" title="Toggle Size">
+          <i class="fa-solid fa-expand" id="floatingYtExpandIcon"></i>
+        </button>
+        <button class="floating-btn" id="floatingYtMinimizeBtn" title="Minimize / Show Video">
+          <i class="fa-solid fa-chevron-down" id="floatingYtMinimizeIcon"></i>
+        </button>
+        <button class="floating-btn" id="floatingYtCloseBtn" title="Close Video">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+    <div class="floating-yt-body" id="floatingYtBody">
+      <iframe id="youtubeIframe" src="" title="YouTube Music Player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <!-- Audio Element for Streaming (Synthesizer handles ambient audio as well) -->
+  <audio id="coreAudioElement" preload="metadata"></audio>
+
+  <!-- Application Scripts -->
+  <script src="js/audio-synth.js?v=3"></script>
+  <script src="js/recommendations.js?v=3"></script>
+  <script src="js/camera.js?v=3"></script>
+  <script src="js/player.js?v=3"></script>
+  <script src="js/analytics.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
+</body>
+</html>
